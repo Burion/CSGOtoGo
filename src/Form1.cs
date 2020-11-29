@@ -14,7 +14,7 @@ using System.Windows.Forms;
 using DemoInfo;
 
 
-namespace Avalonia_Test
+namespace CSGOtoGo
 {
     public partial class Form1 : Form
     {   
@@ -35,6 +35,8 @@ namespace Avalonia_Test
 
         Label l;
         TableLayoutPanel table;
+        DataGridView dg;
+        DataGridView scoreTable;
         PictureBox p;
         Panel smokesPanel;
         DemoParser parser;
@@ -61,25 +63,46 @@ namespace Avalonia_Test
             table = new TableLayoutPanel() { Width = 600, Height = 400, AutoScroll = true };
             table.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             table.CellBorderStyle = TableLayoutPanelCellBorderStyle.Inset;
-            
-
-            // for(int x = 0; x < 10; x++)
-            // {
-            //     table.Controls.Add(new Label() {Text = x.ToString(), Width = 100 }, 0, x);
-            //     table.Controls.Add(new Label() {Text = x.ToString(), Width = 100 }, 1, x);
-            //     table.Controls.Add(new Label() {Text = x.ToString(), Width = 100 }, 2, x);
-            // }
-
-            
+                        
             //parser.TickDone += (sender, e) => {table.Controls.Add(new Label() {Text = "tick", Width = 100 }, 0, table.RowCount); table.Update();};
-            Controls.Add(table);
+            //Controls.Add(table);
+            dg = new DataGridView() { Width = 600, Height = 180, ReadOnly = true, AllowUserToAddRows = false, RowHeadersVisible = false, AllowUserToOrderColumns = false, AllowUserToResizeColumns = false, AllowUserToResizeRows = false};
+            dg.ClearSelection();
+            dg.SelectionChanged += (o,e) => {dg.ClearSelection();};
+            dg.Columns.Add("killer", "Killer");
+            dg.Columns.Add("weapon", "Weapon");
+            dg.Columns.Add("victim", "Victim");
+
+            scoreTable = new DataGridView() { Location = new Point(0, 180), Width = 600, Height = 800, ReadOnly = true, AllowUserToAddRows = false, RowHeadersVisible = false, AllowUserToOrderColumns = false, AllowUserToResizeColumns = false, AllowUserToResizeRows = false};
+            scoreTable.ClearSelection();
+            dg.SelectionChanged += (o,e) => {dg.ClearSelection();};
+            
+            scoreTable.Columns.Add("items", "I");
+            scoreTable.Columns.Add("weapon", "Weapon");
+            scoreTable.Columns.Add("name", "Name");
+            scoreTable.Columns.Add("kills", "Kills");
+            scoreTable.Columns.Add("assists", "Assists");
+            scoreTable.Columns.Add("deaths", "Deaths");
+            scoreTable.Columns.Add("score", "Score");
+            scoreTable.Columns[3].Width = 40;
+            scoreTable.Columns[4].Width = 40;
+            scoreTable.Columns[5].Width = 40;
+            scoreTable.Columns[6].Width = 40;
+
+            Controls.Add(scoreTable);
+
+            foreach (DataGridViewColumn column in dg.Columns)
+            {
+                column.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
+            Controls.Add(dg);
             p = new PictureBox() { Name = "Map", Location = new Point(600, 0), SizeMode = PictureBoxSizeMode.StretchImage, Size = new Size() { Width = (int)pwidth, Height = (int)pwidth }, Image = Image.FromFile("Map.jpg") };
             Button stopB = new Button() { Text = "||", Location = new Point(600, 900), Size = new Size(100, 50)};
             Button normalB = new Button() { Text = ">", Location = new Point(700, 900), Size = new Size(100, 50)};
             Button speedB = new Button() { Text = ">>", Location = new Point(800, 900), Size = new Size(100, 50)};
             ComboBox box = new ComboBox() { Width = 100, Height = 50, Location = new Point(1600, 0), DataSource =
                 new int[] {
-                1,2,3,4,5,6,7,8,9,10
+                1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
                 },
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -109,6 +132,58 @@ namespace Avalonia_Test
 
         }
 
+
+        void UpdateScoreTable(params Player[] players)
+        {
+                const string bomb = "🖩";
+                const string armor = "🛡";
+                const string helmet = "⛑";
+                const string kits = "✄";
+            
+            if(players.Count() == 0)
+            {
+                scoreTable.Rows.Clear();
+                foreach(var g in parser.PlayingParticipants.GroupBy(p => p.Team))
+                {
+                    foreach(var p in g)
+                    {
+                        string items = "";
+                        items += p.Armor > 0 ? armor : "";
+                        items += p.HasHelmet ? helmet : "";
+                        items += p.HasDefuseKit ? kits : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Bomb") ? bomb : "";
+                        var r = scoreTable.Rows.Add(items, p.ActiveWeapon?.Weapon, p.Name, p.AdditionaInformations?.Kills, p.AdditionaInformations?.Assists, p.AdditionaInformations?.Deaths, p.AdditionaInformations?.Score);
+                        scoreTable.Rows[r].DefaultCellStyle.BackColor = p.Team == Team.CounterTerrorist ? Color.Blue : Color.Orange;
+                    }
+                }
+                return;
+            }
+
+            foreach(var p in players)
+            {
+                for(int x = 0; x < scoreTable.Rows.Count; x ++)
+                {
+                    if(scoreTable.Rows[x].Cells[2].Value.ToString() == p.Name)
+                    {
+                        string items = "";
+                        items += p.Armor > 0 ? armor : "";
+                        items += p.HasHelmet ? helmet : "";
+                        items += p.HasDefuseKit ? kits : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Bomb") ? bomb : "";
+                        scoreTable.Rows[x].Cells[0].Value = items;
+                        scoreTable.Rows[x].Cells[1].Value = p.ActiveWeapon?.Weapon;
+                        scoreTable.Rows[x].Cells[2].Value = p.Name;
+                        scoreTable.Rows[x].Cells[3].Value = p.AdditionaInformations?.Kills;
+                        scoreTable.Rows[x].Cells[4].Value = p.AdditionaInformations?.Assists;
+                        scoreTable.Rows[x].Cells[5].Value = p.AdditionaInformations?.Deaths;
+                        scoreTable.Rows[x].Cells[6].Value = p.AdditionaInformations?.Score;
+                    }
+                }
+                
+            }
+
+            
+        }
         public void IncreaseSpeedButton(object o, EventArgs e)
         {
             fps = 5;
@@ -193,22 +268,17 @@ namespace Avalonia_Test
                 FlashedP.AddRange(e.FlashedPlayers);
                 Task.Run(() => { Thread.Sleep(fps*100); FlashedP.RemoveAll(pl => e.FlashedPlayers.Contains(pl));});
             };
-        
-            // parser.PlayerKilled += (sender, e) => { 
-            //     table.RowCount = table.RowCount + 1;
-            //     //table.Controls.Add(new Label() {Text = x.ToString(), Width = 100 }, 0, x);
-            //     this.BeginInvoke((Action)(() =>
-            //     {
-            //         table.Controls.Add(new Label() {Text = e.Killer.Name, Width = 100 }, 0, table.RowCount - 1);
-            //         table.Controls.Add(new Label() {Text = e.Weapon.Weapon.ToString(), Width = 100 }, 1, table.RowCount - 1);
-            //         table.Controls.Add(new Label() {Text = e.Victim.Name, Width = 100 }, 2, table.RowCount - 1);
-            //         Graphics g = this.CreateGraphics();
-
-            //         table.Update();
-
-            //     }));   
-                //table.Controls.Add(new Label() {Text = e.Victim.Name, Width = 100 }, 2, x);
-               // };
+            parser.RoundStart += (o,e) => { UpdateScoreTable();};
+            parser.TickDone += (o,e) => { UpdateScoreTable(parser.PlayingParticipants.ToArray());};
+            parser.PlayerKilled += (sender, e) => { 
+                if(dg.Rows.Count >= 5)
+                {
+                    dg.Rows.RemoveAt(0);
+                }
+                dg.Rows.Add(e.Killer.Name,  (e.Headshot ? "🗣 " : "") + e.Weapon?.Weapon.ToString(), e.Victim?.Name);
+                UpdateScoreTable(e.Killer, e.Victim);
+            };   
+                
             
             await Task.Run(() => { while(parser.ParseNextTick()){ Thread.Sleep(fps); while(!isPlaying) {Thread.Sleep(1);} }; } );
         }

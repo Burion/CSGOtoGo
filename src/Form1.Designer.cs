@@ -1,4 +1,4 @@
-﻿namespace Avalonia_Test
+﻿namespace CSGOtoGo
 {
     partial class Form1
     {
