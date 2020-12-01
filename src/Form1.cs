@@ -52,6 +52,7 @@ namespace CSGOtoGo
             ControlStyles.AllPaintingInWmPaint |
             ControlStyles.UserPaint |
             ControlStyles.DoubleBuffer,true);
+            this.WindowState = FormWindowState.Maximized;
             l = new Label();
             //Controls.Add(l);
             Smokes = new List<Nade>();
@@ -80,14 +81,17 @@ namespace CSGOtoGo
             scoreTable.Columns.Add("items", "I");
             scoreTable.Columns.Add("weapon", "Weapon");
             scoreTable.Columns.Add("name", "Name");
+            scoreTable.Columns.Add("money", "Money");
             scoreTable.Columns.Add("kills", "Kills");
             scoreTable.Columns.Add("assists", "Assists");
             scoreTable.Columns.Add("deaths", "Deaths");
             scoreTable.Columns.Add("score", "Score");
-            scoreTable.Columns[3].Width = 40;
+            scoreTable.Columns[1].Width = 60;
+            scoreTable.Columns[3].Width = 100;
             scoreTable.Columns[4].Width = 40;
             scoreTable.Columns[5].Width = 40;
             scoreTable.Columns[6].Width = 40;
+            scoreTable.Columns[7].Width = 40;
 
             Controls.Add(scoreTable);
 
@@ -152,8 +156,10 @@ namespace CSGOtoGo
                         items += p.HasHelmet ? helmet : "";
                         items += p.HasDefuseKit ? kits : "";
                         items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Bomb") ? bomb : "";
-                        var r = scoreTable.Rows.Add(items, p.ActiveWeapon?.Weapon, p.Name, p.AdditionaInformations?.Kills, p.AdditionaInformations?.Assists, p.AdditionaInformations?.Deaths, p.AdditionaInformations?.Score);
-                        scoreTable.Rows[r].DefaultCellStyle.BackColor = p.Team == Team.CounterTerrorist ? Color.Blue : Color.Orange;
+                        var r = scoreTable.Rows.Add("", "", p.Name);
+                        Color c = p.Team == Team.CounterTerrorist ? Color.Blue : Color.Orange;
+                        if(!p.IsAlive) c = Color.Gray;
+                        scoreTable.Rows[r].DefaultCellStyle.BackColor = c;
                     }
                 }
                 return;
@@ -170,13 +176,22 @@ namespace CSGOtoGo
                         items += p.HasHelmet ? helmet : "";
                         items += p.HasDefuseKit ? kits : "";
                         items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Bomb") ? bomb : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Smoke") ? "S" : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Flash") ? "F" : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("HE") ? "H" : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Molotov") ? "M" : "";
+                        items += p.Weapons.Select(w => w.Weapon.ToString()).Contains("Insendiary") ? "I" : "";
                         scoreTable.Rows[x].Cells[0].Value = items;
                         scoreTable.Rows[x].Cells[1].Value = p.ActiveWeapon?.Weapon;
                         scoreTable.Rows[x].Cells[2].Value = p.Name;
-                        scoreTable.Rows[x].Cells[3].Value = p.AdditionaInformations?.Kills;
-                        scoreTable.Rows[x].Cells[4].Value = p.AdditionaInformations?.Assists;
-                        scoreTable.Rows[x].Cells[5].Value = p.AdditionaInformations?.Deaths;
-                        scoreTable.Rows[x].Cells[6].Value = p.AdditionaInformations?.Score;
+                        scoreTable.Rows[x].Cells[3].Value = p.Money.ToString() + " $";
+                        scoreTable.Rows[x].Cells[4].Value = p.AdditionaInformations?.Kills;
+                        scoreTable.Rows[x].Cells[5].Value = p.AdditionaInformations?.Assists;
+                        scoreTable.Rows[x].Cells[6].Value = p.AdditionaInformations?.Deaths;
+                        scoreTable.Rows[x].Cells[7].Value = p.AdditionaInformations?.Score;
+                        Color c = p.Team == Team.CounterTerrorist ? Color.Blue : Color.Orange;
+                        if(!p.IsAlive) c = Color.Gray;
+                        scoreTable.Rows[x].DefaultCellStyle.BackColor = c;
                     }
                 }
                 
@@ -268,7 +283,7 @@ namespace CSGOtoGo
                 FlashedP.AddRange(e.FlashedPlayers);
                 Task.Run(() => { Thread.Sleep(fps*100); FlashedP.RemoveAll(pl => e.FlashedPlayers.Contains(pl));});
             };
-            parser.RoundStart += (o,e) => { UpdateScoreTable();};
+            parser.MatchStarted += (o,e) => { UpdateScoreTable();};
             parser.TickDone += (o,e) => { UpdateScoreTable(parser.PlayingParticipants.ToArray());};
             parser.PlayerKilled += (sender, e) => { 
                 if(dg.Rows.Count >= 5)
