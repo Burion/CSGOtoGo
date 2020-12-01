@@ -228,7 +228,9 @@ namespace CSGOtoGo
         
         async void ChangeLabel()
         {   
-
+            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationToken t = cts.Token;
+            this.FormClosing+= (o,e) => {cts.Cancel();};
             p.Paint += (o, e) => {
                 Graphics g = e.Graphics;
                 
@@ -263,41 +265,45 @@ namespace CSGOtoGo
             };
             //Invalidate();
             
-            parser = new DemoParser(File.OpenRead("test3.dem"));
+            parser = new DemoParser(File.OpenRead(filePath));
             parser.ParseHeader();
-            parser.TickDone += (o, e) => p.Invalidate();
-            parser.RoundEnd += (o, e) => 
+            lock (locker) 
             {
-                Smokes.Clear();
-            };
-            parser.SmokeNadeStarted += (o, e) => 
-            {
-                Smokes.Add(new Nade() { X = e.Position.X, Y = e.Position.Y, ThrownBy = e.ThrownBy.Name });
-            };
 
-            parser.SmokeNadeEnded += (o, e) => 
-            {
-                Smokes.Remove(Smokes.Single(s => s.X == e.Position.X && s.Y == e.Position.Y));
-            };
-
-            parser.FlashNadeExploded += (o, e) => 
-            {
-                FlashedP.AddRange(e.FlashedPlayers);
-                Task.Run(() => { Thread.Sleep(fps*100); FlashedP.RemoveAll(pl => e.FlashedPlayers.Contains(pl));});
-            };
-            parser.MatchStarted += (o,e) => { UpdateScoreTable();};
-            parser.TickDone += (o,e) => { UpdateScoreTable(parser.PlayingParticipants.ToArray());};
-            parser.PlayerKilled += (sender, e) => { 
-                if(dg.Rows.Count >= 5)
+                parser.TickDone += (o, e) => p.Invalidate();
+                parser.RoundEnd += (o, e) => 
                 {
-                    dg.Rows.RemoveAt(0);
-                }
-                dg.Rows.Add(e.Killer.Name,  (e.Headshot ? "🗣 " : "") + e.Weapon?.Weapon.ToString(), e.Victim?.Name);
-                UpdateScoreTable(e.Killer, e.Victim);
-            };   
+                    Smokes.Clear();
+                };
+                parser.SmokeNadeStarted += (o, e) => 
+                {
+                    Smokes.Add(new Nade() { X = e.Position.X, Y = e.Position.Y, ThrownBy = e.ThrownBy.Name });
+                };
+
+                parser.SmokeNadeEnded += (o, e) => 
+                {
+                    Smokes.Remove(Smokes.Single(s => s.X == e.Position.X && s.Y == e.Position.Y));
+                };
+
+                parser.FlashNadeExploded += (o, e) => 
+                {
+                    FlashedP.AddRange(e.FlashedPlayers);
+                    Task.Run(() => { Thread.Sleep(fps*100); FlashedP.RemoveAll(pl => e.FlashedPlayers.Contains(pl));});
+                };
+                parser.MatchStarted += (o,e) => { UpdateScoreTable();};
+                parser.TickDone += (o,e) => { UpdateScoreTable(parser.PlayingParticipants.ToArray());};
+                parser.PlayerKilled += (sender, e) => { 
+                    if(dg.Rows.Count >= 5)
+                    {
+                        dg.Rows.RemoveAt(0);
+                    }
+                    dg.Rows.Add(e.Killer.Name,  (e.Headshot ? "🗣 " : "") + e.Weapon?.Weapon.ToString(), e.Victim?.Name);
+                    UpdateScoreTable(e.Killer, e.Victim);
+                };   
                 
+            }
             
-            await Task.Run(() => { while(parser.ParseNextTick()){ Thread.Sleep(fps); while(!isPlaying) {Thread.Sleep(1);} }; } );
+            await Task.Run(() => { while(parser.ParseNextTick()){ if(t.IsCancellationRequested) {break;}; Thread.Sleep(fps); while(!isPlaying) {Thread.Sleep(1);} }; } );
         }
         void ButtonClik(object sender, EventArgs e)
         {

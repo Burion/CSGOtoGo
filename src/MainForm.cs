@@ -43,12 +43,16 @@ namespace CSGOtoGo
                 string file = openFileDialog.FileName;
                 try
                 {
+                    DemoParser parser = new DemoParser(File.OpenRead(file));
+                    parser.ParseHeader();
                     Form1 form = new Form1(file);
                     form.Show();
                 }
-                catch (IOException)
+                catch (Exception)
                 {
+                    MessageBox.Show("This file type is not supported. Select one with .dem extension.", "Reading error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+
             }
         }
     }
