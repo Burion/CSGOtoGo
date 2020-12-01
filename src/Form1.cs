@@ -46,8 +46,10 @@ namespace CSGOtoGo
         List<Player> FlashedP;
         event Action GamePaused;
         event Action GameUnPaused;
-        public Form1()
+        string filePath;
+        public Form1(string file)
         {
+            filePath = file;
             this.SetStyle(
             ControlStyles.AllPaintingInWmPaint |
             ControlStyles.UserPaint |
@@ -100,7 +102,7 @@ namespace CSGOtoGo
                 column.SortMode = DataGridViewColumnSortMode.NotSortable;
             }
             Controls.Add(dg);
-            p = new PictureBox() { Name = "Map", Location = new Point(600, 0), SizeMode = PictureBoxSizeMode.StretchImage, Size = new Size() { Width = (int)pwidth, Height = (int)pwidth }, Image = Image.FromFile("Map.jpg") };
+            p = new PictureBox() { Name = "Map", Location = new Point(600, 0), SizeMode = PictureBoxSizeMode.StretchImage, Size = new Size() { Width = (int)pwidth, Height = (int)pwidth }, Image = Image.FromFile("./Maps/Map.jpg") };
             Button stopB = new Button() { Text = "||", Location = new Point(600, 900), Size = new Size(100, 50)};
             Button normalB = new Button() { Text = ">", Location = new Point(700, 900), Size = new Size(100, 50)};
             Button speedB = new Button() { Text = ">>", Location = new Point(800, 900), Size = new Size(100, 50)};
@@ -125,7 +127,7 @@ namespace CSGOtoGo
             { 
                 Monitor.Enter(locker);
                 trueParser = parser; 
-                parser = new IdleDemoParser(File.OpenRead("test3.dem")); 
+                parser = new IdleDemoParser(File.OpenRead(filePath)); 
                 parser.ParseHeader(); 
                 isPlaying = false; 
                 Monitor.Exit(locker);

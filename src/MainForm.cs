@@ -43,7 +43,7 @@ namespace CSGOtoGo
                 string file = openFileDialog.FileName;
                 try
                 {
-                    Form1 form = new Form1();
+                    Form1 form = new Form1(file);
                     form.Show();
                 }
                 catch (IOException)
